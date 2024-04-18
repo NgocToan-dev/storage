@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Recorder</title>
+    <style>
+      /* Optional styling for buttons and recording indicator */
+      body {
+        font-family: sans-serif;
+      }
+      #record-btn {
+        padding: 10px 20px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #recording-indicator {
+        margin-left: 10px;
+        color: red;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="record-btn">Start Recording</button>
+    <span id="recording-indicator">Recording...</span>
+    <script>
+      const recordBtn = document.getElementById("record-btn");
+      const recordingIndicator = document.getElementById("recording-indicator");
+
+      let isRecording = false; // Flag to track recording state
+
+      async function startRecording() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: "audio/webm",
+          });
+          const audioChunks = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunks, { type: "audio/webm" });
+            const audioURL = URL.createObjectURL(blob);
+
+            const downloadLink = document.createElement("a");
+            downloadLink.href = audioURL;
+            downloadLink.download = "myRecording.webm";
+            downloadLink.click();
+
+            URL.revokeObjectURL(audioURL);
+            audioChunks.length = 0;
+          };
+
+          toggleRecordingState(true); // Update recording state and indicator
+          mediaRecorder.start();
+        } catch (err) {
+          console.error("Error accessing microphone:", err);
+        }
+      }
+
+      function stopRecording() {
+        if (isRecording) {
+          mediaRecorder.stop();
+          toggleRecordingState(false);
+        }
+      }
+
+      function toggleRecording() {
+        if (isRecording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      }
+
+      function toggleRecordingState(isRecording) {
+        recordBtn.textContent = isRecording
+          ? "Stop Recording"
+          : "Start Recording";
+        recordingIndicator.style.display = isRecording ? "inline" : "none";
+      }
+
+      recordBtn.addEventListener("click", toggleRecording);
+    </script>
+  </body>
+</html>
