@@ -3,93 +3,111 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Voice Recorder</title>
+    <title>Correcting Words</title>
     <style>
-      /* Optional styling for buttons and recording indicator */
-      body {
-        font-family: sans-serif;
-      }
-      #record-btn {
-        padding: 10px 20px;
-        background-color: #3498db;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-      #recording-indicator {
-        margin-left: 10px;
+      .highlight {
         color: red;
+        cursor: pointer;
+        text-decoration: underline;
+        position: relative;
+      }
+      #sentence {
+        position: relative;
+      }
+      #replaceBtn {
+        position: absolute;
+        top: 100%;
         display: none;
+        width: 150px;
+        background-color: #fff;
+        border: 1px solid #000;
+      }
+      .correct-word {
+        padding: 5px 10px;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
-    <button id="record-btn">Start Recording</button>
-    <span id="recording-indicator">Recording...</span>
+    <p id="sentence-wrong">
+      This is a sentance with wrng words. Click on the wrng words to see the
+      correct ones.
+    </p>
+    <div id="sentence">
+      <p id="sentence-right">
+        This is a
+        <span class="highlight" position-wrong="0">sentance</span> with
+        <span class="highlight" position-wrong="1">wrng</span> words. Click on
+        the <span class="highlight" position-wrong="2">wrng</span> words to see
+        the correct ones.
+      </p>
+      <div id="replaceBtn" class="correct-display"></div>
+    </div>
+
     <script>
-      const recordBtn = document.getElementById("record-btn");
-      const recordingIndicator = document.getElementById("recording-indicator");
-
-      let isRecording = false; // Flag to track recording state
-
-      async function startRecording() {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
+      document.addEventListener("DOMContentLoaded", function () {
+        const sentence = document.getElementById("sentence");
+        const sentenceWrong = document.getElementById("sentence-wrong");
+        const sentenceRight = document.getElementById("sentence-right");
+        const replaceBtn = document.getElementById("replaceBtn");
+        let correctWords = [
+          {
+            startPos: 10,
+            endPos: 17,
+            word: "sentance",
+            corrects: ["sentence"],
+          },
+          {
+            startPos: 24,
+            endPos: 27,
+            word: "wrng",
+            corrects: ["wrong"],
+          },
+          {
+            startPos: 24,
+            endPos: 27,
+            word: "wrng",
+            corrects: ["wrong"],
+          },
+        ];
+        let currentCorrection = null;
+        let highlightEle = document.getElementsByClassName("highlight");
+        document.addEventListener("click", function (e) {
+          if (
+            !e.target.classList.contains("highlight") &&
+            !e.target.classList.contains("correct-display")
+          ) {
+            replaceBtn.style.display = "none";
+          }
+        });
+        Array.from(highlightEle).forEach((highlight) => {
+          highlight.addEventListener("click", function (event) {
+            debugger;
+            if (!event.target.classList.contains("highlight")) {
+              return;
+            }
+            currentCorrection = highlight;
+            highlight.classList.add("highlight");
+            replaceBtn.style.left = highlight.offsetLeft + "px";
+            replaceBtn.style.display = "block";
+            const corrects = event.target.getAttribute("position-wrong");
+            if (!isNaN(corrects)) {
+              replaceBtn.innerHTML = correctWords[Number(corrects)].corrects
+                .map((correct, indexCorrectWord) => {
+                  return `<div class="correct-word" position-correct-word="${indexCorrectWord}">${correct}</div>`;
+                })
+                .join("");
+            }
+            document.addEventListener("click", function (e) {
+              if (e.target.classList.contains("correct-word")) {
+                currentCorrection.classList.remove("highlight");
+                currentCorrection.textContent = e.target.textContent;
+                sentenceWrong.textContent = sentenceRight.textContent.trim();
+              }
+            });
           });
-          const mediaRecorder = new MediaRecorder(stream, {
-            mimeType: "audio/webm",
-          });
-          const audioChunks = [];
-
-          mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
-          };
-
-          mediaRecorder.onstop = () => {
-            const blob = new Blob(audioChunks, { type: "audio/webm" });
-            const audioURL = URL.createObjectURL(blob);
-
-            const downloadLink = document.createElement("a");
-            downloadLink.href = audioURL;
-            downloadLink.download = "myRecording.webm";
-            downloadLink.click();
-
-            URL.revokeObjectURL(audioURL);
-            audioChunks.length = 0;
-          };
-
-          toggleRecordingState(true); // Update recording state and indicator
-          mediaRecorder.start();
-        } catch (err) {
-          console.error("Error accessing microphone:", err);
-        }
-      }
-
-      function stopRecording() {
-        if (isRecording) {
-          mediaRecorder.stop();
-          toggleRecordingState(false);
-        }
-      }
-
-      function toggleRecording() {
-        if (isRecording) {
-          stopRecording();
-        } else {
-          startRecording();
-        }
-      }
-
-      function toggleRecordingState(isRecording) {
-        recordBtn.textContent = isRecording
-          ? "Stop Recording"
-          : "Start Recording";
-        recordingIndicator.style.display = isRecording ? "inline" : "none";
-      }
-
-      recordBtn.addEventListener("click", toggleRecording);
+        });
+      });
     </script>
   </body>
 </html>
